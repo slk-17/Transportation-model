@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Recognition Web App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        .navbar {
+            background-color: #333;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0; /* Add padding for better visibility */
+        }
+
+
+        .navbar a {
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+        }
+
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        
+        .container {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+       
+        .image-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .image-container img {
+            max-width: 45%;
+            height: auto;
+        }
+        .image-container div {
+            flex: 1 1 50%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <a href="#">Object Recognition</a>
+        </div>
+        <div class="navbar-right">
+            <a href="#">Home</a>
+            <a href="#">About</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Upload Images for Object Recognition</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="image" id="imageInput" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <div class="image-container">
+            <div id="originalImage">
+                <h3>Original Image</h3>
+                <img id="originalImg" src="#" alt="Original Image">
+            </div>
+            <div id="processedImage">
+                <h3>Processed Image</h3>
+                <canvas id="processedCanvas" style="border:1px solid black;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        async function loadModel() {
+            return await cocoSsd.load();
+        }
+
+        
+        async function processImage(image) {
+            const model = await loadModel();
+            const predictions = await model.detect(image);
+            return predictions;
+        }
+
+        
+        function displayProcessedResult(image, predictions) {
+            const processedCanvas = document.getElementById('processedCanvas');
+            const ctx = processedCanvas.getContext('2d');
+            processedCanvas.width = image.width;
+            processedCanvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#ffffff';
+
+            predictions.forEach(prediction => {
+                ctx.beginPath();
+                ctx.rect(...prediction.bbox);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#00ff00';
+                ctx.fillStyle = '#00ff00';
+                ctx.stroke();
+                ctx.fillText(
+                    `${prediction.class} (${(prediction.score * 100).toFixed(2)}%)`,
+                    prediction.bbox[0],
+                    prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
+                );
+            });
+        }
+
+        
+        const uploadForm = document.getElementById('uploadForm');
+        uploadForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const imageInput = document.getElementById('imageInput');
+            const originalImgElement = document.getElementById('originalImg');
+
+            const image = await loadImage(imageInput.files[0]);
+            originalImgElement.src = image.src;
+
+            const predictions = await processImage(image);
+            displayProcessedResult(image, predictions);
+        });
+
+        
+        function loadImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const image = new Image();
+                    image.onload = function () {
+                        resolve(image);
+                    };
+                    image.src = event.target.result;
+                };
+                reader.onerror = function (event) {
+                    reject(new Error("Failed to load image"));
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        
+        function displayProcessedResult(image, predictions) {
+    const processedCanvas = document.getElementById('processedCanvas');
+    const ctx = processedCanvas.getContext('2d');
+    processedCanvas.width = image.width;
+    processedCanvas.height = image.height;
+    ctx.drawImage(image, 0, 0);
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#ffffff';
+
+    predictions.forEach(prediction => {
+        ctx.beginPath();
+        ctx.rect(...prediction.bbox);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#00ff00';
+        ctx.fillStyle = '#00ff00';
+        ctx.stroke();
+        ctx.fillText(
+            `${prediction.class} (${(prediction.score * 100).toFixed(2)}%)`,
+            prediction.bbox[0],
+            prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
+        );
+    });
+}
+
+    </script>
+</body>
+</html>
